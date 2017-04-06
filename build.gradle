@@ -21,6 +21,8 @@ dependencies {
     compile 'org.slf4j:log4j-over-slf4j:1.7.3'
     compile 'ch.qos.logback:logback-classic:1.1.2'
 
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.7'
+
     /* Test */
     testCompile 'junit:junit:4.8.2'
 }
