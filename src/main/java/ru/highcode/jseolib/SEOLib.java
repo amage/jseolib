@@ -1,12 +1,15 @@
 package ru.highcode.jseolib;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -14,48 +17,41 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import ru.highcode.jseolib.model.ProjectData;
+import ru.highcode.jseolib.model.ProjectInfo;
 
 public class SEOLib {
     private final String URL_PREFIX = "https://api.seolib.ru/v1/";
     private final String token;
-    private Format format = Format.json;
+    // Only json for now
+    private final Format format = Format.json;
     private final int timeout = 5 * 1000;
-
+    private final Gson gson;
 
     public SEOLib(String token) {
         this.token = token;
+        gson = new GsonBuilder().setDateFormat("yyyy-mm-dd hh:mm:ss").create();
     }
 
-    public ProjectList projectLists() throws IOException {
-        final String url = makeUrl("project/list");
-        final URLConnection connection = new URL(url).openConnection();
-        setupSSL((HttpsURLConnection) connection);
-        connection.setConnectTimeout(timeout);
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(connection.getInputStream(), ProjectList.class);
+    public List<ProjectData> projectLists() throws IOException {
+        final List<ProjectData> result = new ArrayList<>();
+        final JsonArray data = loadData(makeUrl("project/list")).getAsJsonArray();
+        data.forEach(jd -> result.add(gson.fromJson(jd, ProjectData.class)));
+        return result;
     }
 
-    public void projectProjectInfo(long projectId) throws IOException {
+    public ProjectInfo projectProjectInfo(long projectId) throws IOException {
         final Map<String, String> params = new HashMap<>();
         params.put("project_id", String.valueOf(projectId));
-        final String url = makeUrl("project/projectinfo", params);
-        final URLConnection connection = new URL(url).openConnection();
-        setupSSL((HttpsURLConnection) connection);
-        connection.setConnectTimeout(timeout);
-        try (Scanner s = new Scanner(connection.getInputStream())) {
-            s.forEachRemaining(e -> {
-                System.out.println(e);
-            });
-        }
-    }
-
-    public Format getFormat() {
-        return format;
-    }
-
-    public void setFormat(Format format) {
-        this.format = format;
+        final JsonElement data = loadData(makeUrl("project/projectinfo", params));
+        return gson.fromJson(data, ProjectInfo.class);
     }
 
     // TODO: links/data/create
@@ -114,5 +110,21 @@ public class SEOLib {
             throw new IOException(e);
         }
 
+    }
+
+    private JsonElement loadData(String url)
+            throws IOException, MalformedURLException {
+        final URLConnection connection = new URL(url).openConnection();
+        setupSSL((HttpsURLConnection) connection);
+        connection.setConnectTimeout(timeout);
+        final JsonObject json = new JsonParser().parse(new InputStreamReader(connection.getInputStream()))
+                .getAsJsonObject();
+        final int statusCodes = json.get("statusCodes").getAsInt();
+
+        if (statusCodes == 200) {
+            return json.get("data");
+        } else {
+            throw new IOException("statusCodes: " + statusCodes);
+        }
     }
 }

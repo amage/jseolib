@@ -1,4 +1,4 @@
-package ru.highcode.jseolib;
+package ru.highcode.jseolib.model;
 
 import java.util.List;
 

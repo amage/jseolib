@@ -22,6 +22,7 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.2'
 
     compile 'com.fasterxml.jackson.core:jackson-databind:2.8.7'
+    compile 'com.google.code.gson:gson:2.8.0'
 
     /* Test */
     testCompile 'junit:junit:4.8.2'

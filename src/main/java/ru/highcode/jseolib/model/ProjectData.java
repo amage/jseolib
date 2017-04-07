@@ -1,4 +1,4 @@
-package ru.highcode.jseolib;
+package ru.highcode.jseolib.model;
 
 public class ProjectData {
     public boolean active;
