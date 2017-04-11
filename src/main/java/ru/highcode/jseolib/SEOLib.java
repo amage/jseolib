@@ -24,8 +24,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import ru.highcode.jseolib.model.Keyword;
+import ru.highcode.jseolib.model.KeywordGroup;
 import ru.highcode.jseolib.model.ProjectData;
 import ru.highcode.jseolib.model.ProjectInfo;
+import ru.highcode.jseolib.model.ProjectRegion;
 
 public class SEOLib {
     private final String URL_PREFIX = "https://api.seolib.ru/v1/";
@@ -54,12 +57,72 @@ public class SEOLib {
         return gson.fromJson(data, ProjectInfo.class);
     }
 
-    // TODO: links/data/create
-    // TODO: links/data/get
-    // TODO: project/creates
+    public List<KeywordGroup> listKeywordGroups(long projectId) throws IOException {
+        final Map<String, String> params = new HashMap<>();
+        params.put("project_id", String.valueOf(projectId));
+        final JsonElement data = loadData(makeUrl("project/list/keyword/groups", params));
+        final List<KeywordGroup> result = new ArrayList<>();
+        data.getAsJsonArray().forEach(e -> {
+            result.add(gson.fromJson(e, KeywordGroup.class));
+        });
+        return result;
+    }
+
+    public List<Keyword> listKeywords(long id) throws IOException {
+        throw new IllegalStateException("Not implemented");
+    }
+
+    // links/data/get
+    public void linksDataGet() {
+    }
+
+    // TODO better fit model
+    public Map<String, Map<Integer, ProjectRegion>> projectRegions(long projectId) throws IOException {
+        return projectRegions(projectId, true);
+    }
+
+    public Map<String, Map<Integer, ProjectRegion>> projectRegions(long projectId, boolean onlyActive)
+            throws IOException {
+        final Map<String, String> params = new HashMap<>();
+        params.put("project_id", String.valueOf(projectId));
+        if (onlyActive) {
+            params.put("only_active", String.valueOf(onlyActive));
+        }
+        final JsonElement data = loadData(makeUrl("project/regions", params));
+        final JsonObject regionsMap = data.getAsJsonObject();
+
+        final Map<String, Map<Integer, ProjectRegion>> result = new HashMap<>();
+
+        regionsMap.entrySet().forEach(e -> {
+            try {
+                // skip numbers
+                Integer.parseInt(e.getKey());
+                return;
+            } catch (final NumberFormatException nan) {
+            }
+
+            e.getValue().getAsJsonObject();
+            result.put(e.getKey(), makeRegionsMap(e.getValue().getAsJsonObject().getAsJsonObject("regions")));
+        });
+
+        return result;
+    }
+
+    private Map<Integer, ProjectRegion> makeRegionsMap(JsonObject json) {
+        final Map<Integer, ProjectRegion> result = new HashMap<>();
+        json.entrySet().forEach(e -> {
+            final Integer key = Integer.parseInt(e.getKey());
+            final ProjectRegion value = gson.fromJson(e.getValue(), ProjectRegion.class);
+            result.put(key, value);
+        });
+        return result;
+    }
+
     // TODO: project/history/positions/by/date
     // TODO: project/history/positions/by/daterange
-    // TODO: project/list/keyword/groups
+
+    // TODO: links/data/create
+    // TODO: project/creates
 
     private String makeUrl(String api) {
         return makeUrl(api, new HashMap<>());
@@ -71,8 +134,7 @@ public class SEOLib {
         params.put("access_token", token);
         params.put("format", format.name());
         final String paramString = params.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue())
-                .reduce((a, b) -> String.join("&", a, b))
-                .orElse("");
+                .reduce((a, b) -> String.join("&", a, b)).orElse("");
         sb.append(paramString);
 
         return sb.toString();
@@ -112,8 +174,7 @@ public class SEOLib {
 
     }
 
-    private JsonElement loadData(String url)
-            throws IOException, MalformedURLException {
+    private JsonElement loadData(String url) throws IOException, MalformedURLException {
         final URLConnection connection = new URL(url).openConnection();
         setupSSL((HttpsURLConnection) connection);
         connection.setConnectTimeout(timeout);
