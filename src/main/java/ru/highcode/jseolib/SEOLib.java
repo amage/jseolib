@@ -24,7 +24,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import ru.highcode.jseolib.model.Keyword;
 import ru.highcode.jseolib.model.KeywordGroup;
 import ru.highcode.jseolib.model.ProjectData;
 import ru.highcode.jseolib.model.ProjectInfo;
@@ -68,8 +67,18 @@ public class SEOLib {
         return result;
     }
 
-    public List<Keyword> listKeywords(long id) throws IOException {
-        throw new IllegalStateException("Not implemented");
+    public List<KeywordGroup> listKeywords(long projectId) throws IOException {
+        final Map<String, String> params = new HashMap<>();
+        params.put("project_id", String.valueOf(projectId));
+        // TODO make good documentation
+        params.put("construct", "k");
+        final JsonElement data = loadData(makeUrl("project/list/keyword/groups", params));
+        final List<KeywordGroup> result = new ArrayList<>();
+        System.out.println(data);
+        data.getAsJsonArray().forEach(e -> {
+            result.add(gson.fromJson(e, KeywordGroup.class));
+        });
+        return result;
     }
 
     // links/data/get
