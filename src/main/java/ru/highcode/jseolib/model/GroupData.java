@@ -1,12 +1,27 @@
 package ru.highcode.jseolib.model;
 
 public class GroupData {
-    public long id;
-    public String name;
+    private long id;
+    private String name;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     @Override
     public String toString() {
-        return "GroupData [id=" + id + ", name=" + name + "]";
+        return "GroupData [id=" + getId() + ", name=" + getName() + "]";
     }
-
 }

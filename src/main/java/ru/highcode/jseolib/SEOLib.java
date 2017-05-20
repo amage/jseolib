@@ -6,7 +6,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,16 +34,16 @@ import ru.highcode.jseolib.model.ProjectInfo;
 import ru.highcode.jseolib.model.ProjectRegion;
 
 public class SEOLib {
+    private static final String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss";
     private final String URL_PREFIX = "https://api.seolib.ru/v1/";
     private final String token;
     // Only json for now
     private final Format format = Format.json;
     private final int timeout = 5 * 1000;
-    private final Gson gson;
+    private final Gson gson = new GsonBuilder().setDateFormat(DATE_FORMAT).create();
 
     public SEOLib(String token) {
         this.token = token;
-        gson = new GsonBuilder().setDateFormat("yyyy-mm-dd hh:mm:ss").create();
     }
 
     public List<ProjectData> projectLists() throws IOException {
@@ -74,7 +78,6 @@ public class SEOLib {
         params.put("construct", "k");
         final JsonElement data = loadData(makeUrl("project/list/keyword/groups", params));
         final List<KeywordGroup> result = new ArrayList<>();
-        System.out.println(data);
         data.getAsJsonArray().forEach(e -> {
             result.add(gson.fromJson(e, KeywordGroup.class));
         });
@@ -83,6 +86,7 @@ public class SEOLib {
 
     // links/data/get
     public void linksDataGet() {
+        // TODO
     }
 
     // TODO better fit model
@@ -117,6 +121,20 @@ public class SEOLib {
         return result;
     }
 
+    // TODO
+    public String projectHistoryPositionByDate(String projectId, Date reportDate) throws IOException {
+        final Map<String, String> params = new HashMap<>();
+        params.put("project_id", String.valueOf(projectId));
+        params.put("report_date", new SimpleDateFormat("yyyy-MM-dd").format(reportDate));
+        final JsonElement data = loadData(makeUrl("project/history/positions/by/date", params));
+
+        return data.toString();
+    }
+    // TODO: project/history/positions/by/daterange
+
+    // TODO: links/data/create
+    // TODO: project/creates
+
     private Map<Integer, ProjectRegion> makeRegionsMap(JsonObject json) {
         final Map<Integer, ProjectRegion> result = new HashMap<>();
         json.entrySet().forEach(e -> {
@@ -126,12 +144,6 @@ public class SEOLib {
         });
         return result;
     }
-
-    // TODO: project/history/positions/by/date
-    // TODO: project/history/positions/by/daterange
-
-    // TODO: links/data/create
-    // TODO: project/creates
 
     private String makeUrl(String api) {
         return makeUrl(api, new HashMap<>());
@@ -191,10 +203,16 @@ public class SEOLib {
                 .getAsJsonObject();
         final int statusCodes = json.get("statusCodes").getAsInt();
 
+        // TODO: change to result wrapping object
         if (statusCodes == 200) {
             return json.get("data");
         } else {
             throw new IOException("statusCodes: " + statusCodes);
         }
+    }
+
+    public String projectHistoryPositionByDate(String projectId, LocalDate localDate) throws IOException {
+        final Date reportDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return projectHistoryPositionByDate(projectId, reportDate);
     }
 }
