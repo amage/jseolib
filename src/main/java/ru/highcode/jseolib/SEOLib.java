@@ -29,6 +29,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import ru.highcode.jseolib.model.KeywordGroup;
+import ru.highcode.jseolib.model.Position;
 import ru.highcode.jseolib.model.ProjectData;
 import ru.highcode.jseolib.model.ProjectInfo;
 import ru.highcode.jseolib.model.ProjectRegion;
@@ -121,17 +122,33 @@ public class SEOLib {
         return result;
     }
 
-    // TODO
-    public String projectHistoryPositionByDate(String projectId, Date reportDate) throws IOException {
+    // TODO more friendly form
+    public List<Position> projectHistoryPositionByDate(String projectId, LocalDate localDate)
+            throws IOException {
+        final Date reportDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         final Map<String, String> params = new HashMap<>();
         params.put("project_id", String.valueOf(projectId));
         params.put("report_date", new SimpleDateFormat("yyyy-MM-dd").format(reportDate));
         final JsonElement data = loadData(makeUrl("project/history/positions/by/date", params));
 
-        return data.toString();
+        final List<Position> result = new ArrayList<>();
+        final Gson gsonForPos = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
+        data.getAsJsonObject().entrySet().forEach(e -> {
+            final String source = e.getKey();
+            e.getValue().getAsJsonObject().entrySet().forEach(ee -> {
+                final String regionId = ee.getKey();
+                ee.getValue().getAsJsonArray().forEach(posJSON -> {
+                    final Position pos = gsonForPos.fromJson(posJSON, Position.class);
+                    pos.setSource(source);
+                    pos.setRegionId(regionId);
+                    result.add(pos);
+                });
+            });
+        });
+        return result;
     }
-    // TODO: project/history/positions/by/daterange
 
+    // TODO: project/history/positions/by/daterange
     // TODO: links/data/create
     // TODO: project/creates
 
@@ -203,16 +220,11 @@ public class SEOLib {
                 .getAsJsonObject();
         final int statusCodes = json.get("statusCodes").getAsInt();
 
-        // TODO: change to result wrapping object
+        // TODO: change to result wrapping object. "summary" missing.
         if (statusCodes == 200) {
             return json.get("data");
         } else {
             throw new IOException("statusCodes: " + statusCodes);
         }
-    }
-
-    public String projectHistoryPositionByDate(String projectId, LocalDate localDate) throws IOException {
-        final Date reportDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        return projectHistoryPositionByDate(projectId, reportDate);
     }
 }
