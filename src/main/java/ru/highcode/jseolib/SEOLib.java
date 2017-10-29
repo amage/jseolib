@@ -47,14 +47,14 @@ public class SEOLib {
         this.token = token;
     }
 
-    public List<ProjectData> projectLists() throws IOException {
+    public List<ProjectData> listProjects() throws IOException {
         final List<ProjectData> result = new ArrayList<>();
         final JsonArray data = loadData(makeUrl("project/list")).getAsJsonArray();
         data.forEach(jd -> result.add(gson.fromJson(jd, ProjectData.class)));
         return result;
     }
 
-    public ProjectInfo projectProjectInfo(long projectId) throws IOException {
+    public ProjectInfo fetchProjectInfo(long projectId) throws IOException {
         final Map<String, String> params = new HashMap<>();
         params.put("project_id", String.valueOf(projectId));
         final JsonElement data = loadData(makeUrl("project/projectinfo", params));
